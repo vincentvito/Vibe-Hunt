@@ -1,35 +1,36 @@
-type RateLimitEntry = { count: number; resetAt: number };
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const store = new Map<string, RateLimitEntry>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-// Clean expired entries every 60 seconds
-if (typeof globalThis !== "undefined") {
-  const interval = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-      if (entry.resetAt < now) store.delete(key);
-    }
-  }, 60_000);
-  // Don't prevent process from exiting
-  if (interval.unref) interval.unref();
+// Cache rate limiter instances to avoid recreating on every call
+const limiters = new Map<string, Ratelimit>();
+
+function getLimiter(maxRequests: number, windowMs: number): Ratelimit {
+  const key = `${maxRequests}:${windowMs}`;
+  let limiter = limiters.get(key);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(maxRequests, `${windowMs} ms`),
+      prefix: "vibehunt:rl",
+    });
+    limiters.set(key, limiter);
+  }
+  return limiter;
 }
 
-export function rateLimit(
+export async function rateLimit(
   identifier: string,
   { maxRequests, windowMs }: { maxRequests: number; windowMs: number }
-): { success: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = store.get(identifier);
-
-  if (!entry || entry.resetAt < now) {
-    store.set(identifier, { count: 1, resetAt: now + windowMs });
-    return { success: true, remaining: maxRequests - 1 };
-  }
-
-  if (entry.count >= maxRequests) {
-    return { success: false, remaining: 0 };
-  }
-
-  entry.count++;
-  return { success: true, remaining: maxRequests - entry.count };
+): Promise<{ success: boolean; remaining: number }> {
+  const limiter = getLimiter(maxRequests, windowMs);
+  const result = await limiter.limit(identifier);
+  return {
+    success: result.success,
+    remaining: result.remaining,
+  };
 }

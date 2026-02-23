@@ -20,6 +20,7 @@ import { templateLicenses } from "./licenses";
 import { gameStats } from "./stats";
 import { dailyFeatures } from "./daily-features";
 import { screenshots, gameTags } from "./game-extras";
+import { devlogs } from "./devlogs";
 
 export const gameStatusEnum = pgEnum("game_status", [
   "draft",
@@ -121,4 +122,5 @@ export const gamesRelations = relations(games, ({ one, many }) => ({
   templateLicense: one(templateLicenses),
   gameStats: many(gameStats),
   dailyFeatures: many(dailyFeatures),
+  devlogs: many(devlogs),
 }));

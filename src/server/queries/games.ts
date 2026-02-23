@@ -1,5 +1,47 @@
 import { supabase } from "@/server/db";
 
+export type FeedSort = "hot" | "new" | "top";
+
+export async function getFeed(sort: FeedSort = "hot") {
+  try {
+    const { data, error } = await supabase.rpc("get_hot_feed", {
+      sort_mode: sort,
+      result_limit: 50,
+    });
+
+    if (error) {
+      console.error("getFeed error:", error.message);
+      return [];
+    }
+    if (!data) return [];
+
+    return (data as any[]).map((g) => ({
+      id: g.id,
+      slug: g.slug,
+      title: g.title,
+      tagline: g.tagline,
+      engine: g.engine,
+      thumbnailUrl: g.thumbnail_url,
+      coverImageUrl: g.cover_image_url,
+      webBuildUrl: g.web_build_url,
+      madeWithAi: g.made_with_ai,
+      aiToolsUsed: g.ai_tools_used ?? [],
+      upvoteCount: g.upvote_count,
+      commentCount: g.comment_count,
+      playCount: g.play_count,
+      launchDate: g.launch_date,
+      publishedAt: g.published_at,
+      creatorId: g.creator_id,
+      creatorName: g.creator_display_name ?? "Unknown",
+      creatorUsername: g.creator_username ?? "unknown",
+      creatorAvatar: g.creator_avatar_url ?? null,
+    }));
+  } catch (err) {
+    console.error("getFeed unexpected error:", err);
+    return [];
+  }
+}
+
 export async function getTodaysFeed() {
   try {
     const { data, error } = await supabase
@@ -17,7 +59,11 @@ export async function getTodaysFeed() {
       .order("published_at", { ascending: false })
       .limit(50);
 
-    if (error || !data) return [];
+    if (error) {
+      console.error("getTodaysFeed error:", error.message);
+      return [];
+    }
+    if (!data) return [];
 
     return data.map((g: any) => ({
       id: g.id,
@@ -40,7 +86,8 @@ export async function getTodaysFeed() {
       creatorUsername: g.users?.username ?? "unknown",
       creatorAvatar: g.users?.avatar_url ?? null,
     }));
-  } catch {
+  } catch (err) {
+    console.error("getTodaysFeed unexpected error:", err);
     return [];
   }
 }
@@ -63,7 +110,11 @@ export async function getGameBySlug(slug: string) {
       .limit(1)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error("getGameBySlug error:", error.message);
+      return null;
+    }
+    if (!data) return null;
 
     return {
       id: data.id,
@@ -94,7 +145,8 @@ export async function getGameBySlug(slug: string) {
       creatorTwitterUrl: (data as any).users?.twitter_url ?? null,
       creatorInstagramUrl: (data as any).users?.instagram_url ?? null,
     };
-  } catch {
+  } catch (err) {
+    console.error("getGameBySlug unexpected error:", err);
     return null;
   }
 }
@@ -108,6 +160,21 @@ export async function hasUserUpvoted(userId: string, gameId: string) {
     .limit(1);
 
   return (data?.length ?? 0) > 0;
+}
+
+export async function getUserUpvotedGameIds(
+  userId: string,
+  gameIds: string[]
+): Promise<Set<string>> {
+  if (gameIds.length === 0) return new Set();
+
+  const { data } = await supabase
+    .from("upvotes")
+    .select("game_id")
+    .eq("user_id", userId)
+    .in("game_id", gameIds);
+
+  return new Set((data ?? []).map((u: any) => u.game_id));
 }
 
 export async function getGamesByCreator(creatorId: string) {

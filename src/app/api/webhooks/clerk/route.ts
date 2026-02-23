@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const displayName =
       [data.first_name, data.last_name].filter(Boolean).join(" ") || username;
 
-    await supabase.from("users").insert({
+    const { error } = await supabase.from("users").insert({
       id: nanoid(),
       clerk_id: data.id,
       email,
@@ -58,6 +58,10 @@ export async function POST(req: Request) {
       display_name: displayName,
       avatar_url: data.image_url,
     });
+    if (error) {
+      console.error("Clerk webhook: failed to create user:", error.message);
+      return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
+    }
   }
 
   if (type === "user.updated") {
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
     const displayName =
       [data.first_name, data.last_name].filter(Boolean).join(" ") || username;
 
-    await supabase
+    const { error } = await supabase
       .from("users")
       .update({
         email,
@@ -75,10 +79,18 @@ export async function POST(req: Request) {
         avatar_url: data.image_url,
       })
       .eq("clerk_id", data.id);
+    if (error) {
+      console.error("Clerk webhook: failed to update user:", error.message);
+      return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+    }
   }
 
   if (type === "user.deleted") {
-    await supabase.from("users").delete().eq("clerk_id", data.id);
+    const { error } = await supabase.from("users").delete().eq("clerk_id", data.id);
+    if (error) {
+      console.error("Clerk webhook: failed to delete user:", error.message);
+      return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });

@@ -1,16 +1,34 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Gamepad2, Rocket, Trophy, Zap } from "lucide-react";
-import { getTodaysFeed } from "@/server/queries/games";
+import { Gamepad2, Rocket, Trophy, Zap, Flame, Clock } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
+import { supabase } from "@/server/db";
+import { getFeed, getUserUpvotedGameIds, type FeedSort } from "@/server/queries/games";
 import { GameCard } from "@/components/games/game-card";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { CategoryBar } from "@/components/layout/category-bar";
 import { GameCardListSkeleton } from "@/components/skeletons/game-card-skeleton";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+const SORT_OPTIONS = [
+  { value: "hot" as const, label: "Hot", icon: Flame },
+  { value: "new" as const, label: "New", icon: Clock },
+  { value: "top" as const, label: "Top", icon: Trophy },
+];
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
+  const { sort: rawSort } = await searchParams;
+  const sort: FeedSort = (["hot", "new", "top"].includes(rawSort ?? "")
+    ? rawSort
+    : "hot") as FeedSort;
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -39,9 +57,30 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* Sort Toggle */}
+          <div className="mb-6 flex items-center justify-center">
+            <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+              {SORT_OPTIONS.map((opt) => (
+                <Link
+                  key={opt.value}
+                  href={`/?sort=${opt.value}`}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    sort === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <opt.icon className="h-3.5 w-3.5" />
+                  {opt.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
           {/* Game Feed */}
           <Suspense fallback={<GameCardListSkeleton count={5} />}>
-            <GameFeed />
+            <GameFeed sort={sort} />
           </Suspense>
         </div>
       </main>
@@ -51,8 +90,26 @@ export default function HomePage() {
   );
 }
 
-async function GameFeed() {
-  const games = await getTodaysFeed();
+async function GameFeed({ sort }: { sort: FeedSort }) {
+  const games = await getFeed(sort);
+
+  // Batch-query upvote status for authenticated users
+  let upvotedIds = new Set<string>();
+  const { userId: clerkId } = await auth();
+  if (clerkId) {
+    const { data: user } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clerk_id", clerkId)
+      .limit(1)
+      .single();
+    if (user) {
+      upvotedIds = await getUserUpvotedGameIds(
+        user.id,
+        games.map((g) => g.id)
+      );
+    }
+  }
 
   return (
     <>
@@ -60,7 +117,7 @@ async function GameFeed() {
       <div className="mb-6 flex items-center justify-center gap-6 text-sm text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <Gamepad2 className="h-4 w-4" />
-          {games.length} games today
+          {games.length} games
         </span>
         <span className="flex items-center gap-1.5">
           <Zap className="h-4 w-4 text-accent" />
@@ -97,6 +154,7 @@ async function GameFeed() {
                 creatorName={game.creatorName}
                 creatorUsername={game.creatorUsername}
                 creatorAvatar={game.creatorAvatar}
+                hasUpvoted={upvotedIds.has(game.id)}
               />
             </div>
           </div>

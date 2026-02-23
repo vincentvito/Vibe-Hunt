@@ -77,3 +77,6 @@ export {
   notificationTypeEnum,
   notificationsRelations,
 } from "./notifications";
+
+// Devlogs
+export { devlogs, devlogsRelations } from "./devlogs";

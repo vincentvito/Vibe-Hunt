@@ -22,7 +22,7 @@ export async function createComment(input: {
   try {
     const user = await requireAuth();
 
-    const rl = rateLimit(`comment:${user.id}`, {
+    const rl = await rateLimit(`comment:${user.id}`, {
       maxRequests: 10,
       windowMs: 60_000,
     });
@@ -35,13 +35,18 @@ export async function createComment(input: {
     if (validated.parentId) {
       const { data: parent } = await supabase
         .from("comments")
-        .select("depth")
+        .select("depth, game_id")
         .eq("id", validated.parentId)
+        .eq("game_id", validated.gameId)
         .limit(1)
         .single();
-      if (parent) {
-        depth = Math.min(parent.depth + 1, 3);
+      if (!parent) {
+        return actionError("Parent comment not found.");
       }
+      if (parent.depth >= 3) {
+        return actionError("Maximum reply depth reached.");
+      }
+      depth = parent.depth + 1;
     }
 
     await supabase.from("comments").insert({
@@ -53,9 +58,12 @@ export async function createComment(input: {
       depth,
     });
 
-    await supabase.rpc("increment_comment", {
+    const { error: rpcError } = await supabase.rpc("increment_comment", {
       game_id_input: validated.gameId,
     });
+    if (rpcError) {
+      console.error("Failed to increment comment count:", rpcError.message);
+    }
 
     const { data: game } = await supabase
       .from("games")

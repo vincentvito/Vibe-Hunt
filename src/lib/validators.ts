@@ -14,7 +14,12 @@ export const createGameSchema = z.object({
     "threejs",
     "other",
   ]),
-  webBuildUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  webBuildUrl: z
+    .string()
+    .url("Must be a valid URL")
+    .refine((url) => url.startsWith("https://"), "URL must use HTTPS")
+    .optional()
+    .or(z.literal("")),
   thumbnailUrl: z.string().url().optional().or(z.literal("")),
   coverImageUrl: z.string().url().optional().or(z.literal("")),
   videoUrl: z.string().url().optional().or(z.literal("")),
@@ -64,3 +69,22 @@ export const createBountySchema = z.object({
 });
 
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
+
+export const updateProfileSchema = z.object({
+  bio: z.string().max(500, "Bio must be 500 characters or less").optional().or(z.literal("")),
+  websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  githubUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  twitterUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  instagramUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  discordHandle: z.string().max(37, "Discord handle too long").optional().or(z.literal("")),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const createDevlogSchema = z.object({
+  title: z.string().min(2, "Title must be at least 2 characters").max(200, "Title too long"),
+  body: z.string().min(10, "Body must be at least 10 characters").max(5000, "Maximum 5000 characters"),
+  gameId: z.string().min(1),
+});
+
+export type CreateDevlogInput = z.infer<typeof createDevlogSchema>;

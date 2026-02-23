@@ -85,7 +85,7 @@ export function WasmPlayer({ buildUrl, title, className }: WasmPlayerProps) {
             className="h-full w-full"
             style={{ aspectRatio: "16/9" }}
             allow="autoplay; fullscreen; gamepad"
-            sandbox="allow-scripts allow-same-origin allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             onError={() => setError(true)}
           />
           <div className="absolute right-2 top-2">

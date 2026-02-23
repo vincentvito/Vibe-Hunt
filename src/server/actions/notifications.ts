@@ -16,7 +16,7 @@ export async function markNotificationRead(
   try {
     const user = await requireAuth();
 
-    const rl = rateLimit(`notif-read:${user.id}`, {
+    const rl = await rateLimit(`notif-read:${user.id}`, {
       maxRequests: 60,
       windowMs: 60_000,
     });
@@ -39,7 +39,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult<void>> {
   try {
     const user = await requireAuth();
 
-    const rl = rateLimit(`notif-read-all:${user.id}`, {
+    const rl = await rateLimit(`notif-read-all:${user.id}`, {
       maxRequests: 5,
       windowMs: 60_000,
     });

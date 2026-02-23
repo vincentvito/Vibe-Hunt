@@ -22,12 +22,23 @@ export async function toggleFollow(
       return actionError("You cannot follow yourself.");
     }
 
-    const rl = rateLimit(`follow:${user.id}`, {
+    const rl = await rateLimit(`follow:${user.id}`, {
       maxRequests: 20,
       windowMs: 60_000,
     });
     if (!rl.success)
       return actionError("Too many requests. Please slow down.");
+
+    // Verify target user exists
+    const { data: targetUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", targetUserId)
+      .limit(1)
+      .single();
+    if (!targetUser) {
+      return actionError("User not found.");
+    }
 
     const { data: existing } = await supabase
       .from("follows")

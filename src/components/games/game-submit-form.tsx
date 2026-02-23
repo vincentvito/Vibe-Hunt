@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useActionState } from "react";
 import { createGame } from "@/server/actions/games";
 import { Sparkles, Loader2 } from "lucide-react";
+import { ImageUpload } from "./image-upload";
+import { MultiImageUpload } from "./multi-image-upload";
 
 const AI_TOOLS = [
   "cursor",
@@ -27,6 +29,19 @@ const ENGINES = [
   { value: "other", label: "Other" },
 ];
 
+async function uploadFile(file: File, type: string): Promise<string> {
+  const uploadData = new FormData();
+  uploadData.append("file", file);
+  uploadData.append("type", type);
+  const res = await fetch("/api/upload", { method: "POST", body: uploadData });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to upload ${type}`);
+  }
+  const json = await res.json();
+  return json.url;
+}
+
 export function GameSubmitForm() {
   const [tagInput, setTagInput] = useState("");
   const tags = tagInput
@@ -38,6 +53,28 @@ export function GameSubmitForm() {
   const [error, formAction, isPending] = useActionState(
     async (_prev: string | null, formData: FormData) => {
       try {
+        // Upload images first, then pass URLs to server action
+        const thumbnailFile = formData.get("thumbnailFile") as File | null;
+        const coverFile = formData.get("coverFile") as File | null;
+        const screenshotFiles = formData.getAll("screenshots") as File[];
+
+        if (thumbnailFile && thumbnailFile.size > 0) {
+          const url = await uploadFile(thumbnailFile, "thumbnail");
+          formData.set("thumbnailUrl", url);
+        }
+
+        if (coverFile && coverFile.size > 0) {
+          const url = await uploadFile(coverFile, "cover");
+          formData.set("coverImageUrl", url);
+        }
+
+        for (const file of screenshotFiles) {
+          if (file.size > 0) {
+            const url = await uploadFile(file, "screenshot");
+            formData.append("screenshotUrls", url);
+          }
+        }
+
         await createGame(formData);
         return null;
       } catch (e) {
@@ -130,40 +167,50 @@ export function GameSubmitForm() {
           name="webBuildUrl"
           type="url"
           className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          placeholder="https://your-game-build.com/index.html"
+          placeholder="https://your-game.itch.io/game-name"
         />
-        <p className="mt-1 text-xs text-muted-foreground">
-          URL to your hosted web build (HTML5, WebGL, or WASM)
-        </p>
+        <div className="mt-2 rounded-lg border border-border/50 bg-muted/30 p-3">
+          <p className="text-xs font-medium text-foreground">
+            Where can I host my game for free?
+          </p>
+          <ul className="mt-1.5 space-y-1 text-xs text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">itch.io</span> — Best for indie games. Upload your build and use the embed URL
+            </li>
+            <li>
+              <span className="font-medium text-foreground">GitHub Pages</span> — Free static hosting. Push your build to a repo and enable Pages
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Netlify / Vercel</span> — Drag-and-drop deploy your HTML5 build folder
+            </li>
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            The URL must use HTTPS. itch.io embed URLs work best for iframe embedding.
+          </p>
+        </div>
       </div>
 
-      {/* Media URLs */}
+      {/* Image Uploads */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="thumbnailUrl" className="block text-sm font-medium">
-            Thumbnail URL
-          </label>
-          <input
-            id="thumbnailUrl"
-            name="thumbnailUrl"
-            type="url"
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            placeholder="https://..."
-          />
-        </div>
-        <div>
-          <label htmlFor="coverImageUrl" className="block text-sm font-medium">
-            Cover Image URL
-          </label>
-          <input
-            id="coverImageUrl"
-            name="coverImageUrl"
-            type="url"
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            placeholder="https://..."
-          />
-        </div>
+        <ImageUpload
+          label="Thumbnail Image"
+          name="thumbnailFile"
+          helperText="Square image, recommended 400x400px"
+        />
+        <ImageUpload
+          label="Cover Image"
+          name="coverFile"
+          helperText="Wide image, recommended 1200x630px"
+        />
       </div>
+
+      {/* Screenshots */}
+      <MultiImageUpload
+        label="Screenshots (up to 5)"
+        name="screenshots"
+        maxFiles={5}
+        helperText="Show off your game! PNG or JPG, max 5MB each"
+      />
 
       {/* Optional URLs */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -271,7 +318,7 @@ export function GameSubmitForm() {
         {isPending ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Launching...
+            Uploading & Launching...
           </>
         ) : (
           "Launch Game"

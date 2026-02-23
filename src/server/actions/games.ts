@@ -16,7 +16,7 @@ export async function createGame(
 ): Promise<ActionResult<never> | void> {
   const user = await requireAuth();
 
-  const rl = rateLimit(`submit:${user.id}`, {
+  const rl = await rateLimit(`submit:${user.id}`, {
     maxRequests: 5,
     windowMs: 300_000,
   });
@@ -71,6 +71,19 @@ export async function createGame(
     .single();
 
   if (error) return actionError("Failed to create game. Please try again.");
+
+  // Insert screenshots if provided
+  const screenshotUrls = formData.getAll("screenshotUrls") as string[];
+  if (screenshotUrls.length > 0) {
+    const screenshotRows = screenshotUrls.map((url, index) => ({
+      id: nanoid(),
+      url,
+      alt_text: `${validated.title} screenshot ${index + 1}`,
+      sort_order: index,
+      game_id: gameId,
+    }));
+    await supabase.from("screenshots").insert(screenshotRows);
+  }
 
   // Find-or-create tags and associate with game
   if (validated.tags.length > 0) {

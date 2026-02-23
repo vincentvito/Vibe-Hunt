@@ -25,6 +25,10 @@ export function UpvoteButton({
   function handleClick() {
     if (!isSignedIn) return;
 
+    // Capture pre-click state for rollback
+    const prevUpvoted = upvoted;
+    const prevCount = count;
+
     // Optimistic update
     setUpvoted(!upvoted);
     setCount((c) => (upvoted ? c - 1 : c + 1));
@@ -32,9 +36,9 @@ export function UpvoteButton({
     startTransition(async () => {
       const result = await toggleUpvote(gameId);
       if (!result.success) {
-        // Rollback on error
-        setUpvoted(upvoted);
-        setCount(initialCount);
+        // Rollback to pre-click state
+        setUpvoted(prevUpvoted);
+        setCount(prevCount);
       }
     });
   }

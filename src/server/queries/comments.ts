@@ -13,7 +13,11 @@ export async function getGameComments(gameId: string) {
       .eq("game_id", gameId)
       .order("created_at", { ascending: true });
 
-    if (error || !data) return [];
+    if (error) {
+      console.error("getGameComments error:", error.message);
+      return [];
+    }
+    if (!data) return [];
 
     const allComments = data.map((c: any) => ({
       id: c.id,
@@ -54,7 +58,8 @@ export async function getGameComments(gameId: string) {
     }
 
     return rootComments;
-  } catch {
+  } catch (err) {
+    console.error("getGameComments unexpected error:", err);
     return [];
   }
 }

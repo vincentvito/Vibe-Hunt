@@ -115,7 +115,7 @@ export function GameCard({
             </span>
           )}
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase">
-            {engine.replace("_", " ")}
+            {engine.replaceAll("_", " ")}
           </span>
         </div>
       </div>

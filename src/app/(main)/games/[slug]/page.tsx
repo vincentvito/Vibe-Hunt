@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import {
-  ExternalLink,
   Github,
   Sparkles,
   Calendar,
@@ -12,12 +11,17 @@ import {
   Instagram,
 } from "lucide-react";
 import { XIcon } from "@/components/icons/x-icon";
-import { getGameBySlug } from "@/server/queries/games";
+import { auth } from "@clerk/nextjs/server";
+import { supabase } from "@/server/db";
+import { getGameBySlug, hasUserUpvoted } from "@/server/queries/games";
 import { getGameComments } from "@/server/queries/comments";
 import { UpvoteButton } from "@/components/social/upvote-button";
 import { WasmPlayer } from "@/components/player/wasm-player";
 import { CommentThread } from "@/components/social/comment-thread";
 import { GameJsonLd } from "@/components/seo/game-jsonld";
+import { getGameDevlogs } from "@/server/queries/devlogs";
+import { DevlogForm } from "@/components/devlogs/devlog-form";
+import { DevlogList } from "@/components/devlogs/devlog-list";
 import { timeAgo } from "@/lib/utils";
 
 type Props = {
@@ -53,14 +57,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GameDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [game, comments] = await Promise.all([
-    getGameBySlug(slug),
-    getGameBySlug(slug).then((g) =>
-      g ? getGameComments(g.id) : []
-    ),
+  const game = await getGameBySlug(slug);
+  if (!game) notFound();
+
+  const [comments, authResult, screenshotsResult, devlogs] = await Promise.all([
+    getGameComments(game.id),
+    (async () => {
+      const { userId: clerkId } = await auth();
+      if (!clerkId) return { upvoted: false, currentUserId: null };
+      const { data: user } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clerk_id", clerkId)
+        .limit(1)
+        .single();
+      if (!user) return { upvoted: false, currentUserId: null };
+      const upvoted = await hasUserUpvoted(user.id, game.id);
+      return { upvoted, currentUserId: user.id };
+    })(),
+    supabase
+      .from("screenshots")
+      .select("id, url, alt_text, sort_order")
+      .eq("game_id", game.id)
+      .order("sort_order", { ascending: true }),
+    getGameDevlogs(game.id),
   ]);
 
-  if (!game) notFound();
+  const { upvoted, currentUserId } = authResult;
+  const screenshots = screenshotsResult.data ?? [];
+  const isCreator = currentUserId === game.creatorId;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -130,14 +155,14 @@ export default async function GameDetailPage({ params }: Props) {
               {game.publishedAt ? timeAgo(game.publishedAt) : "Draft"}
             </span>
             <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium uppercase">
-              {game.engine.replace("_", " ")}
+              {game.engine.replaceAll("_", " ")}
             </span>
           </div>
         </div>
         <UpvoteButton
           gameId={game.id}
           initialCount={game.upvoteCount}
-          initialUpvoted={false}
+          initialUpvoted={upvoted}
         />
       </div>
 
@@ -217,6 +242,29 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
       )}
 
+      {/* Screenshots */}
+      {screenshots.length > 0 && (
+        <div className="mt-8 border-t border-border pt-8">
+          <h2 className="text-lg font-semibold">Screenshots</h2>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {screenshots.map((s: any) => (
+              <div
+                key={s.id}
+                className="relative overflow-hidden rounded-lg"
+                style={{ aspectRatio: "16/9" }}
+              >
+                <Image
+                  src={s.url}
+                  alt={s.alt_text ?? `${game.title} screenshot`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Description */}
       <div className="mt-8 border-t border-border pt-8">
         <h2 className="text-lg font-semibold">About</h2>
@@ -224,6 +272,23 @@ export default async function GameDetailPage({ params }: Props) {
           {game.description}
         </div>
       </div>
+
+      {/* Devlogs */}
+      {(devlogs.length > 0 || isCreator) && (
+        <div className="mt-8 border-t border-border pt-8">
+          <h2 className="text-lg font-semibold">Updates</h2>
+          {isCreator && (
+            <div className="mt-3">
+              <DevlogForm gameId={game.id} />
+            </div>
+          )}
+          {devlogs.length > 0 && (
+            <div className="mt-4">
+              <DevlogList devlogs={devlogs} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Comments */}
       <div className="mt-8 border-t border-border pt-8">
