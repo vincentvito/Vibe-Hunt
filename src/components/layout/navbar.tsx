@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import {
   Gamepad2,
   Search,
@@ -10,12 +9,16 @@ import {
   ShoppingBag,
   Crosshair,
 } from "lucide-react";
+import { useAuth } from "@/providers/auth-provider";
+import { UserMenu } from "@/components/layout/user-menu";
 
 export function Navbar({
   notificationSlot,
 }: {
   notificationSlot?: React.ReactNode;
 }) {
+  const { isSignedIn, isLoaded } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -50,30 +53,28 @@ export function Navbar({
             <Search className="h-5 w-5" />
           </Link>
 
-          <SignedIn>
-            {notificationSlot}
-            <Link
-              href="/games/submit"
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Launch Game</span>
-            </Link>
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: { avatarBox: "h-8 w-8" },
-              }}
-            />
-          </SignedIn>
+          {isLoaded && isSignedIn && (
+            <>
+              {notificationSlot}
+              <Link
+                href="/games/submit"
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Launch Game</span>
+              </Link>
+              <UserMenu />
+            </>
+          )}
 
-          <SignedOut>
-            <SignInButton mode="modal">
-              <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
-                Sign In
-              </button>
-            </SignInButton>
-          </SignedOut>
+          {isLoaded && !isSignedIn && (
+            <Link
+              href="/sign-in"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>

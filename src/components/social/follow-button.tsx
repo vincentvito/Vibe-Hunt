@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { UserPlus, UserMinus } from "lucide-react";
 import { toggleFollow } from "@/server/actions/follows";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 
 type FollowButtonProps = {

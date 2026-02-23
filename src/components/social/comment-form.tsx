@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Send } from "lucide-react";
 import { createComment } from "@/server/actions/comments";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 
 type CommentFormProps = {

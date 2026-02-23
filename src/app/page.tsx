@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Gamepad2, Rocket, Trophy, Zap, Flame, Clock } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { getFeed, getUserUpvotedGameIds, type FeedSort } from "@/server/queries/games";
 import { GameCard } from "@/components/games/game-card";
@@ -95,12 +95,13 @@ async function GameFeed({ sort }: { sort: FeedSort }) {
 
   // Batch-query upvote status for authenticated users
   let upvotedIds = new Set<string>();
-  const { userId: clerkId } = await auth();
-  if (clerkId) {
+  const supabaseAuth = await createServerClient();
+  const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
+  if (authUser) {
     const { data: user } = await supabase
       .from("users")
       .select("id")
-      .eq("clerk_id", clerkId)
+      .eq("auth_id", authUser.id)
       .limit(1)
       .single();
     if (user) {

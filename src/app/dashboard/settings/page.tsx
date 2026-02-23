@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { supabase } from "@/server/db";
 import { ProfileSettingsForm } from "@/components/settings/profile-settings-form";
@@ -9,15 +9,16 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) redirect("/sign-in");
+  const supabaseAuth = await createServerClient();
+  const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
+  if (!authUser) redirect("/sign-in");
 
   const { data: user } = await supabase
     .from("users")
     .select(
       "id, bio, website_url, github_url, twitter_url, instagram_url, discord_handle"
     )
-    .eq("clerk_id", clerkId)
+    .eq("auth_id", authUser.id)
     .limit(1)
     .single();
 

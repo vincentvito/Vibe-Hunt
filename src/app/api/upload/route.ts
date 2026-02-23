@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
@@ -8,15 +8,16 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
+    const supabaseAuth = await createServerClient();
+    const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
+    if (!authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: user } = await supabase
       .from("users")
       .select("id")
-      .eq("clerk_id", clerkId)
+      .eq("auth_id", authUser.id)
       .limit(1)
       .single();
 

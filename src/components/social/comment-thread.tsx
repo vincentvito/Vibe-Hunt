@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MessageSquare, Reply } from "lucide-react";
 import { createComment } from "@/server/actions/comments";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/providers/auth-provider";
 import { cn, timeAgo } from "@/lib/utils";
 import { CommentForm } from "./comment-form";
 

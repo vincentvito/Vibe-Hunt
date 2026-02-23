@@ -11,7 +11,7 @@ import {
   Instagram,
 } from "lucide-react";
 import { XIcon } from "@/components/icons/x-icon";
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { getGameBySlug, hasUserUpvoted } from "@/server/queries/games";
 import { getGameComments } from "@/server/queries/comments";
@@ -63,12 +63,13 @@ export default async function GameDetailPage({ params }: Props) {
   const [comments, authResult, screenshotsResult, devlogs] = await Promise.all([
     getGameComments(game.id),
     (async () => {
-      const { userId: clerkId } = await auth();
-      if (!clerkId) return { upvoted: false, currentUserId: null };
+      const supabaseAuth = await createServerClient();
+      const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
+      if (!authUser) return { upvoted: false, currentUserId: null };
       const { data: user } = await supabase
         .from("users")
         .select("id")
-        .eq("clerk_id", clerkId)
+        .eq("auth_id", authUser.id)
         .limit(1)
         .single();
       if (!user) return { upvoted: false, currentUserId: null };

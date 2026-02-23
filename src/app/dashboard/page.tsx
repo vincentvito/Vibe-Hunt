@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { Gamepad2, Eye, ChevronUp } from "lucide-react";
 import type { Metadata } from "next";
@@ -8,7 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const { userId: clerkId } = await auth();
+  const supabaseAuth = await createServerClient();
+  const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
 
   let user: { id: string; display_name: string } | null = null;
   let totalGames = 0;
@@ -16,13 +17,15 @@ export default async function DashboardPage() {
   let totalPlays = 0;
 
   try {
-    const { data } = await supabase
-      .from("users")
-      .select("id, display_name")
-      .eq("clerk_id", clerkId!)
-      .limit(1)
-      .single();
-    user = data;
+    if (authUser) {
+      const { data } = await supabase
+        .from("users")
+        .select("id, display_name")
+        .eq("auth_id", authUser.id)
+        .limit(1)
+        .single();
+      user = data;
+    }
   } catch {
     // DB not connected yet
   }

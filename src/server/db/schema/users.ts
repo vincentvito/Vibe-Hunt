@@ -18,7 +18,7 @@ export const users = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => nanoid()),
-    clerkId: text("clerk_id").notNull().unique(),
+    authId: text("auth_id").notNull().unique(),
     email: text("email").notNull().unique(),
     username: text("username").notNull().unique(),
     displayName: text("display_name").notNull(),
@@ -40,7 +40,7 @@ export const users = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    index("users_clerk_id_idx").on(table.clerkId),
+    index("users_auth_id_idx").on(table.authId),
     uniqueIndex("users_username_idx").on(table.username),
   ]
 );

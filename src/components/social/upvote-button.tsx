@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { ChevronUp } from "lucide-react";
 import { toggleUpvote } from "@/server/actions/upvotes";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from "@/providers/auth-provider";
 import { cn, formatCompactNumber } from "@/lib/utils";
 
 type UpvoteButtonProps = {

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { createServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Rocket } from "lucide-react";
 import { GameSubmitForm } from "@/components/games/game-submit-form";
@@ -12,8 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default async function SubmitGamePage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  const supabaseAuth = await createServerClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) redirect("/sign-in");
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">

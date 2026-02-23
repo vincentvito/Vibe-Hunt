@@ -1,27 +1,24 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/games(.*)",
-  "/play(.*)",
-  "/marketplace(.*)",
-  "/bounties(.*)",
-  "/profile(.*)",
-  "/leaderboard(.*)",
-  "/search(.*)",
-  "/terms",
-  "/privacy",
-  "/api/webhooks(.*)",
-  "/api/cron(.*)",
-]);
+const PROTECTED_ROUTES = ["/dashboard", "/games/submit"];
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+export async function middleware(request: NextRequest) {
+  const { supabaseResponse, user } = await updateSession(request);
+
+  const isProtected = PROTECTED_ROUTES.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  if (isProtected && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    url.searchParams.set("next", request.nextUrl.pathname);
+    return NextResponse.redirect(url);
   }
-});
+
+  return supabaseResponse;
+}
 
 export const config = {
   matcher: [
