@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const game = await getGameBySlug(slug);
   if (!game) return { title: "Game Not Found" };
 
-  const url = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.com"}/games/${game.slug}`;
+  const url = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.games"}/games/${game.slug}`;
   const image = game.coverImageUrl ?? game.thumbnailUrl;
 
   return {

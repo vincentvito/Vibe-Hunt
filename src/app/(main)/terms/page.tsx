@@ -148,10 +148,10 @@ export default function TermsPage() {
           <p className="mt-2">
             If you have questions about these Terms, please contact us at{" "}
             <a
-              href="mailto:legal@vibehunt.com"
+              href="mailto:legal@vibehunt.games"
               className="text-primary hover:underline"
             >
-              legal@vibehunt.com
+              legal@vibehunt.games
             </a>
             .
           </p>

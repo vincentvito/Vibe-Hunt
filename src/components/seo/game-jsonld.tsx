@@ -15,7 +15,7 @@ export function GameJsonLd({
   creatorName,
   publishedAt,
 }: GameJsonLdProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.games";
 
   const jsonLd = {
     "@context": "https://schema.org",

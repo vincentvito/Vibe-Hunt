@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { supabase } from "@/server/db";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.games";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [

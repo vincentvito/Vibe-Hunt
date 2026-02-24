@@ -131,10 +131,10 @@ export default function PrivacyPage() {
           <p className="mt-2">
             To exercise these rights, contact us at{" "}
             <a
-              href="mailto:privacy@vibehunt.com"
+              href="mailto:privacy@vibehunt.games"
               className="text-primary hover:underline"
             >
-              privacy@vibehunt.com
+              privacy@vibehunt.games
             </a>
             .
           </p>
@@ -170,10 +170,10 @@ export default function PrivacyPage() {
           <p className="mt-2">
             If you have questions about this Privacy Policy, please contact us at{" "}
             <a
-              href="mailto:privacy@vibehunt.com"
+              href="mailto:privacy@vibehunt.games"
               className="text-primary hover:underline"
             >
-              privacy@vibehunt.com
+              privacy@vibehunt.games
             </a>
             .
           </p>

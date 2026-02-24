@@ -5,7 +5,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import "./globals.css";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vibehunt.games";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

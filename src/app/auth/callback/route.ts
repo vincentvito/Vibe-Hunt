@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { supabase as supabaseAdmin } from "@/server/db";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,6 +11,23 @@ export async function GET(request: Request) {
     const supabase = await createServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("auth_id", user.id)
+          .limit(1)
+          .single();
+
+        if (!profile) {
+          return NextResponse.redirect(`${origin}/complete-profile`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

@@ -70,6 +70,20 @@ export const createBountySchema = z.object({
 
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
 
+export const completeProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be 30 characters or less")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Letters, numbers, hyphens, and underscores only"),
+  displayName: z
+    .string()
+    .min(2, "Display name must be at least 2 characters")
+    .max(50, "Display name must be 50 characters or less"),
+});
+
+export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
+
 export const updateProfileSchema = z.object({
   bio: z.string().max(500, "Bio must be 500 characters or less").optional().or(z.literal("")),
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
