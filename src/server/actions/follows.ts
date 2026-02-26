@@ -11,6 +11,7 @@ import {
   type ActionResult,
 } from "@/lib/action-utils";
 import { createNotification } from "@/server/services/notifications";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function toggleFollow(
   targetUserId: string
@@ -35,7 +36,7 @@ export async function toggleFollow(
       .select("id")
       .eq("id", targetUserId)
       .limit(1)
-      .single();
+      .maybeSingle();
     if (!targetUser) {
       return actionError("User not found.");
     }
@@ -70,7 +71,8 @@ export async function toggleFollow(
       revalidatePath("/");
       return actionSuccess({ following: true });
     }
-  } catch {
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
     return actionError("Failed to update follow. Please try again.");
   }
 }

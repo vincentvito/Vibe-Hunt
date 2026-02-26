@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { Gamepad2, Eye, ChevronUp } from "lucide-react";
@@ -9,51 +10,38 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const supabaseAuth = await createServerClient();
-  const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
+  const {
+    data: { user: authUser },
+  } = await supabaseAuth.auth.getUser();
 
-  let user: { id: string; display_name: string } | null = null;
+  if (!authUser) {
+    redirect("/sign-in");
+  }
+
+  const { data: user } = await supabase
+    .from("users")
+    .select("id, display_name")
+    .eq("auth_id", authUser.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!user) {
+    redirect("/complete-profile");
+  }
+
   let totalGames = 0;
   let totalUpvotes = 0;
   let totalPlays = 0;
 
-  try {
-    if (authUser) {
-      const { data } = await supabase
-        .from("users")
-        .select("id, display_name")
-        .eq("auth_id", authUser.id)
-        .limit(1)
-        .single();
-      user = data;
-    }
-  } catch {
-    // DB not connected yet
-  }
+  const { data: userGames } = await supabase
+    .from("games")
+    .select("upvote_count, play_count")
+    .eq("creator_id", user.id);
 
-  if (!user) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold">Welcome to VibeHunt</h1>
-        <p className="mt-1 text-muted-foreground">
-          Your account is being set up. Connect a database to get started.
-        </p>
-      </div>
-    );
-  }
-
-  try {
-    const { data: userGames } = await supabase
-      .from("games")
-      .select("upvote_count, play_count")
-      .eq("creator_id", user.id);
-
-    if (userGames) {
-      totalGames = userGames.length;
-      totalUpvotes = userGames.reduce((s, g) => s + (g.upvote_count ?? 0), 0);
-      totalPlays = userGames.reduce((s, g) => s + (g.play_count ?? 0), 0);
-    }
-  } catch {
-    // DB query failed
+  if (userGames) {
+    totalGames = userGames.length;
+    totalUpvotes = userGames.reduce((s, g) => s + (g.upvote_count ?? 0), 0);
+    totalPlays = userGames.reduce((s, g) => s + (g.play_count ?? 0), 0);
   }
 
   return (

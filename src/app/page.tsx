@@ -103,7 +103,7 @@ async function GameFeed({ sort }: { sort: FeedSort }) {
       .select("id")
       .eq("auth_id", authUser.id)
       .limit(1)
-      .single();
+      .maybeSingle();
     if (user) {
       upvotedIds = await getUserUpvotedGameIds(
         user.id,

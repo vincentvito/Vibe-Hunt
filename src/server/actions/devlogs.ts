@@ -12,6 +12,7 @@ import {
   actionError,
   type ActionResult,
 } from "@/lib/action-utils";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function createDevlog(input: {
   title: string;
@@ -36,7 +37,7 @@ export async function createDevlog(input: {
       .select("creator_id, slug")
       .eq("id", validated.gameId)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (!game) return actionError("Game not found.");
     if (game.creator_id !== user.id)
@@ -57,7 +58,8 @@ export async function createDevlog(input: {
 
     revalidatePath(`/games/${game.slug}`);
     return actionSuccess(undefined);
-  } catch {
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
     return actionError("Failed to post devlog. Please try again.");
   }
 }

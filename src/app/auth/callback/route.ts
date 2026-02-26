@@ -21,7 +21,7 @@ export async function GET(request: Request) {
           .select("id")
           .eq("auth_id", user.id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (!profile) {
           return NextResponse.redirect(`${origin}/complete-profile`);

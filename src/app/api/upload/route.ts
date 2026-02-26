@@ -19,10 +19,13 @@ export async function POST(request: NextRequest) {
       .select("id")
       .eq("auth_id", authUser.id)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Please complete your profile to continue." },
+        { status: 403 }
+      );
     }
 
     const formData = await request.formData();

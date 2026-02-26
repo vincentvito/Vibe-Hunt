@@ -20,9 +20,9 @@ export default async function SettingsPage() {
     )
     .eq("auth_id", authUser.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (!user) redirect("/sign-in");
+  if (!user) redirect("/complete-profile");
 
   return (
     <div>

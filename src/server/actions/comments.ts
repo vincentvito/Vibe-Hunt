@@ -13,6 +13,7 @@ import {
   type ActionResult,
 } from "@/lib/action-utils";
 import { createNotification } from "@/server/services/notifications";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function createComment(input: {
   body: string;
@@ -39,7 +40,7 @@ export async function createComment(input: {
         .eq("id", validated.parentId)
         .eq("game_id", validated.gameId)
         .limit(1)
-        .single();
+        .maybeSingle();
       if (!parent) {
         return actionError("Parent comment not found.");
       }
@@ -70,7 +71,7 @@ export async function createComment(input: {
       .select("creator_id, title, slug")
       .eq("id", validated.gameId)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (game && game.creator_id !== user.id) {
       await createNotification({
@@ -89,7 +90,7 @@ export async function createComment(input: {
         .select("user_id")
         .eq("id", validated.parentId)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (parentComment && parentComment.user_id !== user.id) {
         await createNotification({
@@ -108,7 +109,8 @@ export async function createComment(input: {
 
     revalidatePath("/");
     return actionSuccess(undefined);
-  } catch {
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
     return actionError("Failed to post comment. Please try again.");
   }
 }

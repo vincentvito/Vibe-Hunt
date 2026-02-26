@@ -47,6 +47,8 @@ export default function SignUpPage() {
       });
 
       if (result.error) {
+        // Profile creation failed — sign out to prevent orphaned auth user
+        await supabaseBrowser.auth.signOut();
         setError(result.error);
         setLoading(false);
         return;

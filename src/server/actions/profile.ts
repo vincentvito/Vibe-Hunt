@@ -11,6 +11,7 @@ import {
   actionError,
   type ActionResult,
 } from "@/lib/action-utils";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function updateProfile(
   input: Record<string, string>
@@ -50,7 +51,8 @@ export async function updateProfile(
     revalidatePath(`/profile/${user.username}`);
     revalidatePath("/dashboard/settings");
     return actionSuccess(undefined);
-  } catch {
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
     return actionError("Failed to update profile. Please try again.");
   }
 }

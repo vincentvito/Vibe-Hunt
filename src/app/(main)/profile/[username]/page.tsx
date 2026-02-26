@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select("display_name, bio, avatar_url, username")
     .eq("username", username)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!user) return { title: "Profile Not Found" };
 
@@ -50,7 +50,7 @@ export default async function ProfilePage({ params }: Props) {
     .select("*")
     .eq("username", username)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!user) notFound();
 

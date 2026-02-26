@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Gamepad2, Mail } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { checkUserProfileExists } from "@/server/actions/auth";
 
 type AuthMode = "password" | "magic-link";
 
@@ -25,7 +26,7 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabaseBrowser.auth.signInWithPassword({
+    const { data, error } = await supabaseBrowser.auth.signInWithPassword({
       email,
       password,
     });
@@ -34,6 +35,16 @@ export default function SignInPage() {
       setError(error.message);
       setLoading(false);
       return;
+    }
+
+    // Check if DB profile exists — redirect to complete-profile if not
+    if (data.user) {
+      const hasProfile = await checkUserProfileExists(data.user.id);
+      if (!hasProfile) {
+        router.push("/complete-profile");
+        router.refresh();
+        return;
+      }
     }
 
     router.push(next);

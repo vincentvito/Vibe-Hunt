@@ -11,6 +11,7 @@ import {
   type ActionResult,
 } from "@/lib/action-utils";
 import { createNotification } from "@/server/services/notifications";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function toggleUpvote(
   gameId: string
@@ -70,7 +71,7 @@ export async function toggleUpvote(
       .select("creator_id, title, slug")
       .eq("id", gameId)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (game && game.creator_id !== user.id) {
       await createNotification({
@@ -84,7 +85,8 @@ export async function toggleUpvote(
 
     revalidatePath("/");
     return actionSuccess({ upvoted: true });
-  } catch {
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
     return actionError("Failed to toggle upvote. Please try again.");
   }
 }

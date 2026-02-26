@@ -71,7 +71,7 @@ export default async function GameDetailPage({ params }: Props) {
         .select("id")
         .eq("auth_id", authUser.id)
         .limit(1)
-        .single();
+        .maybeSingle();
       if (!user) return { upvoted: false, currentUserId: null };
       const upvoted = await hasUserUpvoted(user.id, game.id);
       return { upvoted, currentUserId: user.id };

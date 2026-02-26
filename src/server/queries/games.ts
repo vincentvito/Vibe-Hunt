@@ -108,7 +108,7 @@ export async function getGameBySlug(slug: string) {
       )
       .eq("slug", slug)
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("getGameBySlug error:", error.message);

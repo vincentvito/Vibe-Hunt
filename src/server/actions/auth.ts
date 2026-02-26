@@ -8,7 +8,19 @@ export async function createUserProfile(input: {
   email: string;
   username: string;
   displayName: string;
-}) {
+}): Promise<{ error: string | null; alreadyExists?: boolean }> {
+  // Check if profile already exists for this auth_id
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("auth_id", input.authId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return { error: null, alreadyExists: true };
+  }
+
   const { error } = await supabase.from("users").insert({
     id: nanoid(),
     auth_id: input.authId,
@@ -25,10 +37,24 @@ export async function createUserProfile(input: {
       if (error.message.includes("email")) {
         return { error: "Email is already registered" };
       }
-      return { error: "Account already exists" };
+      // Duplicate auth_id — profile was created between our check and insert
+      return { error: null, alreadyExists: true };
     }
     return { error: error.message };
   }
 
   return { error: null };
+}
+
+export async function checkUserProfileExists(
+  authId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("users")
+    .select("id")
+    .eq("auth_id", authId)
+    .limit(1)
+    .maybeSingle();
+
+  return !!data;
 }

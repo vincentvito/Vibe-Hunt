@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Gamepad2 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
-import { createUserProfile } from "@/server/actions/auth";
+import {
+  createUserProfile,
+  checkUserProfileExists,
+} from "@/server/actions/auth";
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -20,9 +23,16 @@ export default function CompleteProfilePage() {
   } | null>(null);
 
   useEffect(() => {
-    supabaseBrowser.auth.getUser().then(({ data: { user } }) => {
+    supabaseBrowser.auth.getUser().then(async ({ data: { user } }) => {
       if (!user || !user.email) {
         router.push("/sign-in");
+        return;
+      }
+      // If profile already exists, skip straight to home
+      const exists = await checkUserProfileExists(user.id);
+      if (exists) {
+        router.push("/");
+        router.refresh();
         return;
       }
       setAuthUser({ id: user.id, email: user.email });

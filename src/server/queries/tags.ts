@@ -21,7 +21,7 @@ export async function getGamesByTag(tagSlug: string) {
     .from("tags")
     .select("id")
     .eq("slug", tagSlug)
-    .single();
+    .maybeSingle();
 
   if (!tag) return [];
 

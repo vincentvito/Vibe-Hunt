@@ -97,7 +97,7 @@ export async function createGame(
         .select("id")
         .eq("slug", tagSlug)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       let tagId: string;
       if (existing) {
