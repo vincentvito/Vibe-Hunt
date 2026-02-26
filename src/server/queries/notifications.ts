@@ -25,14 +25,14 @@ export async function getNotifications(
 
   if (error || !data) return [];
 
-  return data.map((n: any) => ({
+  return data.map((n) => ({
     id: n.id,
     type: n.type,
     title: n.title,
     body: n.body,
     link: n.link,
     isRead: n.is_read,
-    metadata: n.metadata,
+    metadata: n.metadata as Record<string, unknown> | null,
     createdAt: n.created_at,
   }));
 }

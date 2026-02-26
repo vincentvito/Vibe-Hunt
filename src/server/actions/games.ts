@@ -9,7 +9,12 @@ import { nanoid } from "nanoid";
 import { requireAuth } from "@/lib/auth-utils";
 import { rateLimit } from "@/lib/rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
-import { actionError, type ActionResult } from "@/lib/action-utils";
+import {
+  actionSuccess,
+  actionError,
+  type ActionResult,
+} from "@/lib/action-utils";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function createGame(
   formData: FormData
@@ -87,40 +92,83 @@ export async function createGame(
 
   // Find-or-create tags and associate with game
   if (validated.tags.length > 0) {
-    for (const tagName of validated.tags) {
-      const tagSlug = slugify(tagName, { lower: true, strict: true });
-      if (!tagSlug) continue;
+    const tagSlugs = validated.tags
+      .map((t) => slugify(t, { lower: true, strict: true }))
+      .filter(Boolean);
 
-      // Try to find existing tag
-      const { data: existing } = await supabase
+    if (tagSlugs.length > 0) {
+      // Batch-fetch existing tags
+      const { data: existingTags } = await supabase
         .from("tags")
-        .select("id")
-        .eq("slug", tagSlug)
-        .limit(1)
-        .maybeSingle();
+        .select("id, slug")
+        .in("slug", tagSlugs);
 
-      let tagId: string;
-      if (existing) {
-        tagId = existing.id;
-      } else {
-        // Create new tag
-        tagId = nanoid();
-        const { error: tagError } = await supabase.from("tags").insert({
-          id: tagId,
-          name: tagName.charAt(0).toUpperCase() + tagName.slice(1).toLowerCase(),
-          slug: tagSlug,
-        });
-        if (tagError) continue;
+      const existingMap = new Map(
+        (existingTags ?? []).map((t) => [t.slug, t.id])
+      );
+
+      // Create missing tags
+      const newTags = validated.tags
+        .map((name) => {
+          const slug = slugify(name, { lower: true, strict: true });
+          if (!slug || existingMap.has(slug)) return null;
+          const id = nanoid();
+          existingMap.set(slug, id);
+          return {
+            id,
+            name: name.charAt(0).toUpperCase() + name.slice(1).toLowerCase(),
+            slug,
+          };
+        })
+        .filter((t): t is NonNullable<typeof t> => t !== null);
+
+      if (newTags.length > 0) {
+        await supabase.from("tags").insert(newTags);
       }
 
-      // Associate tag with game
-      await supabase.from("game_tags").insert({
-        game_id: gameId,
-        tag_id: tagId,
-      });
+      // Batch-insert game_tags
+      const gameTagRows = tagSlugs
+        .map((slug) => {
+          const tagId = existingMap.get(slug);
+          return tagId ? { game_id: gameId, tag_id: tagId } : null;
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      if (gameTagRows.length > 0) {
+        await supabase.from("game_tags").insert(gameTagRows);
+      }
     }
   }
 
   revalidatePath("/");
   redirect(`/games/${slug}`);
+}
+
+export async function deleteGame(
+  gameId: string
+): Promise<ActionResult<void>> {
+  try {
+    const user = await requireAuth();
+
+    const { data: game } = await supabase
+      .from("games")
+      .select("id, creator_id")
+      .eq("id", gameId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!game) return actionError("Game not found.");
+    if (game.creator_id !== user.id)
+      return actionError("You can only delete your own games.");
+
+    const { error } = await supabase.from("games").delete().eq("id", gameId);
+
+    if (error) return actionError("Failed to delete game. Please try again.");
+
+    revalidatePath("/");
+    return actionSuccess(undefined);
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
+    return actionError("Failed to delete game. Please try again.");
+  }
 }

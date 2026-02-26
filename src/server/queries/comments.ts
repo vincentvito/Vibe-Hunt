@@ -19,7 +19,10 @@ export async function getGameComments(gameId: string) {
     }
     if (!data) return [];
 
-    const allComments = data.map((c: any) => ({
+    type CommentWithUser = (typeof data)[number] & {
+      users?: { display_name: string; username: string; avatar_url: string | null } | null;
+    };
+    const allComments = (data as CommentWithUser[]).map((c) => ({
       id: c.id,
       body: c.body,
       isEdited: c.is_edited,

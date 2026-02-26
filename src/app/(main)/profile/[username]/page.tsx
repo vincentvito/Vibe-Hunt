@@ -47,7 +47,9 @@ export default async function ProfilePage({ params }: Props) {
 
   const { data: user } = await supabase
     .from("users")
-    .select("*")
+    .select(
+      "id, display_name, username, bio, avatar_url, website_url, github_url, twitter_url, instagram_url, created_at"
+    )
     .eq("username", username)
     .limit(1)
     .maybeSingle();
@@ -161,7 +163,7 @@ export default async function ProfilePage({ params }: Props) {
           Games ({userGames?.length ?? 0})
         </h2>
         <div className="mt-4 space-y-3">
-          {(userGames ?? []).map((game: any) => (
+          {(userGames ?? []).map((game) => (
             <GameCard
               key={game.id}
               id={game.id}

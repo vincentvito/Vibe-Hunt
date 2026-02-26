@@ -67,7 +67,10 @@ export async function getLeaderboard(
 
   if (error || !data) return [];
 
-  return data.map((g: any, index: number) => ({
+  type GameWithUser = (typeof data)[number] & {
+    users?: { display_name: string; username: string; avatar_url: string | null } | null;
+  };
+  return (data as GameWithUser[]).map((g, index) => ({
     id: g.id,
     slug: g.slug,
     title: g.title,
@@ -111,7 +114,10 @@ export async function getTopCreators(
     }
   >();
 
-  for (const g of data as any[]) {
+  type CreatorRow = (typeof data)[number] & {
+    users?: { id: string; display_name: string; username: string; avatar_url: string | null } | null;
+  };
+  for (const g of data as CreatorRow[]) {
     const cid = g.creator_id;
     const existing = creatorMap.get(cid);
     if (existing) {

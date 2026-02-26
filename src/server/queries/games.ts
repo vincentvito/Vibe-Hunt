@@ -1,5 +1,34 @@
 import { supabase } from "@/server/db";
 
+type FeedRow = {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  engine: string;
+  thumbnail_url: string | null;
+  cover_image_url: string | null;
+  web_build_url: string | null;
+  made_with_ai: boolean;
+  ai_tools_used: string[] | null;
+  upvote_count: number;
+  comment_count: number;
+  play_count: number;
+  launch_date: string | null;
+  published_at: string;
+  creator_id: string;
+  creator_display_name?: string;
+  creator_username?: string;
+  creator_avatar_url?: string | null;
+  users?: {
+    display_name: string;
+    username: string;
+    avatar_url: string | null;
+    twitter_url?: string | null;
+    instagram_url?: string | null;
+  } | null;
+};
+
 export type FeedSort = "hot" | "new" | "top";
 
 export async function getFeed(sort: FeedSort = "hot") {
@@ -15,7 +44,7 @@ export async function getFeed(sort: FeedSort = "hot") {
     }
     if (!data) return [];
 
-    return (data as any[]).map((g) => ({
+    return (data as FeedRow[]).map((g) => ({
       id: g.id,
       slug: g.slug,
       title: g.title,
@@ -65,7 +94,10 @@ export async function getTodaysFeed() {
     }
     if (!data) return [];
 
-    return data.map((g: any) => ({
+    type TodayRow = (typeof data)[number] & {
+      users?: { display_name: string; username: string; avatar_url: string | null } | null;
+    };
+    return (data as TodayRow[]).map((g) => ({
       id: g.id,
       slug: g.slug,
       title: g.title,
@@ -139,11 +171,11 @@ export async function getGameBySlug(slug: string) {
       publishedAt: data.published_at,
       createdAt: data.created_at,
       creatorId: data.creator_id,
-      creatorName: (data as any).users?.display_name ?? "Unknown",
-      creatorUsername: (data as any).users?.username ?? "unknown",
-      creatorAvatar: (data as any).users?.avatar_url ?? null,
-      creatorTwitterUrl: (data as any).users?.twitter_url ?? null,
-      creatorInstagramUrl: (data as any).users?.instagram_url ?? null,
+      creatorName: (data as unknown as FeedRow).users?.display_name ?? "Unknown",
+      creatorUsername: (data as unknown as FeedRow).users?.username ?? "unknown",
+      creatorAvatar: (data as unknown as FeedRow).users?.avatar_url ?? null,
+      creatorTwitterUrl: (data as unknown as FeedRow).users?.twitter_url ?? null,
+      creatorInstagramUrl: (data as unknown as FeedRow).users?.instagram_url ?? null,
     };
   } catch (err) {
     console.error("getGameBySlug unexpected error:", err);
@@ -174,7 +206,7 @@ export async function getUserUpvotedGameIds(
     .eq("user_id", userId)
     .in("game_id", gameIds);
 
-  return new Set((data ?? []).map((u: any) => u.game_id));
+  return new Set((data ?? []).map((u) => u.game_id));
 }
 
 export async function getGamesByCreator(creatorId: string) {
@@ -186,7 +218,7 @@ export async function getGamesByCreator(creatorId: string) {
     .eq("creator_id", creatorId)
     .order("created_at", { ascending: false });
 
-  return (data ?? []).map((g: any) => ({
+  return (data ?? []).map((g) => ({
     id: g.id,
     slug: g.slug,
     title: g.title,

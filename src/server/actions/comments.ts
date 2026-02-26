@@ -114,3 +114,42 @@ export async function createComment(input: {
     return actionError("Failed to post comment. Please try again.");
   }
 }
+
+export async function deleteComment(
+  commentId: string
+): Promise<ActionResult<void>> {
+  try {
+    const user = await requireAuth();
+
+    const { data: comment } = await supabase
+      .from("comments")
+      .select("id, user_id, game_id")
+      .eq("id", commentId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!comment) return actionError("Comment not found.");
+    if (comment.user_id !== user.id)
+      return actionError("You can only delete your own comments.");
+
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (error) return actionError("Failed to delete comment. Please try again.");
+
+    const { error: rpcError } = await supabase.rpc("decrement_comment", {
+      game_id_input: comment.game_id,
+    });
+    if (rpcError) {
+      console.error("Failed to decrement comment count:", rpcError.message);
+    }
+
+    revalidatePath("/");
+    return actionSuccess(undefined);
+  } catch (err) {
+    if (isRedirectError(err)) throw err;
+    return actionError("Failed to delete comment. Please try again.");
+  }
+}

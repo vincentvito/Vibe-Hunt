@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { supabase } from "@/server/db";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -28,6 +29,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const rl = await rateLimit(`upload:${user.id}`, {
+      maxRequests: 20,
+      windowMs: 60_000,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many uploads. Please wait a moment." },
+        { status: 429 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const type = (formData.get("type") as string) || "image";
@@ -50,7 +62,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = file.name.split(".").pop() ?? "jpg";
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+    const ext = extMap[file.type] ?? "jpg";
     const fileName = `${type}_${nanoid(8)}.${ext}`;
     const filePath = `${user.id}/${fileName}`;
 

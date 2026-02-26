@@ -31,14 +31,11 @@ export async function createUserProfile(input: {
 
   if (error) {
     if (error.code === "23505") {
-      if (error.message.includes("username")) {
-        return { error: "Username is already taken" };
+      if (error.message.includes("auth_id")) {
+        // Duplicate auth_id — profile was created between our check and insert
+        return { error: null, alreadyExists: true };
       }
-      if (error.message.includes("email")) {
-        return { error: "Email is already registered" };
-      }
-      // Duplicate auth_id — profile was created between our check and insert
-      return { error: null, alreadyExists: true };
+      return { error: "An account with this information already exists." };
     }
     return { error: error.message };
   }

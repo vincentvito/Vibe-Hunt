@@ -44,13 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: game.title,
       description: game.tagline,
       url,
-      ...(image ? { images: [{ url: image }] } : {}),
+      images: [{ url: image ?? "/og-default.png", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: game.title,
       description: game.tagline,
-      ...(image ? { images: [image] } : {}),
+      images: [image ?? "/og-default.png"],
     },
   };
 }
@@ -248,7 +248,7 @@ export default async function GameDetailPage({ params }: Props) {
         <div className="mt-8 border-t border-border pt-8">
           <h2 className="text-lg font-semibold">Screenshots</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {screenshots.map((s: any) => (
+            {screenshots.map((s) => (
               <div
                 key={s.id}
                 className="relative overflow-hidden rounded-lg"

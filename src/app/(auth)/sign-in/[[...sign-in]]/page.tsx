@@ -6,13 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Gamepad2, Mail } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { checkUserProfileExists } from "@/server/actions/auth";
+import { safeRedirect } from "@/lib/utils";
 
 type AuthMode = "password" | "magic-link";
 
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = safeRedirect(searchParams.get("next") ?? "/");
 
   const [mode, setMode] = useState<AuthMode>("password");
   const [email, setEmail] = useState("");

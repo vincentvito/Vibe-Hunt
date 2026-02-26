@@ -17,7 +17,10 @@ export async function getGameDevlogs(gameId: string) {
     return [];
   }
 
-  return (data ?? []).map((d: any) => ({
+  type DevlogWithUser = (typeof data)[number] & {
+    users?: { display_name: string; username: string; avatar_url: string | null } | null;
+  };
+  return (data as DevlogWithUser[]).map((d) => ({
     id: d.id,
     title: d.title,
     body: d.body,

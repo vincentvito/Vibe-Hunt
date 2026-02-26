@@ -28,16 +28,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "VibeHunt",
+    locale: "en_US",
     title: "VibeHunt — Discover, Play & Trade Vibecoded Games",
     description:
       "The launchpad for vibecoded games. Discover new games daily, play instantly in your browser.",
     url: BASE_URL,
+    images: [{ url: "/og-default.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "VibeHunt — Discover, Play & Trade Vibecoded Games",
     description:
       "The launchpad for vibecoded games. Discover new games daily, play instantly in your browser.",
+    images: ["/og-default.png"],
   },
   robots: {
     index: true,

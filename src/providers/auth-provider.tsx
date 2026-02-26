@@ -23,10 +23,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    supabaseBrowser.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      setIsLoaded(true);
-    });
+    supabaseBrowser.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setUser(user);
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        setIsLoaded(true);
+      });
 
     const {
       data: { subscription },

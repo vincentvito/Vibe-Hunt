@@ -1,5 +1,24 @@
 import { supabase } from "@/server/db";
 
+type SearchRow = {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  engine: string;
+  thumbnail_url: string | null;
+  web_build_url: string | null;
+  made_with_ai: boolean;
+  upvote_count: number;
+  comment_count: number;
+  play_count: number;
+  published_at: string;
+  creator_id: string;
+  creator_display_name?: string;
+  creator_username?: string;
+  creator_avatar_url?: string | null;
+};
+
 export async function searchGames(query: string) {
   if (!query || query.trim().length === 0) return [];
 
@@ -15,7 +34,7 @@ export async function searchGames(query: string) {
     }
     if (!data) return [];
 
-    return (data as any[]).map((g) => ({
+    return (data as SearchRow[]).map((g) => ({
       id: g.id,
       slug: g.slug,
       title: g.title,

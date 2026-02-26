@@ -21,6 +21,22 @@ export function formatCompactNumber(num: number) {
   }).format(num);
 }
 
+/**
+ * Validates a redirect path to prevent open redirect attacks.
+ * Only allows relative paths starting with `/`.
+ */
+export function safeRedirect(path: string, fallback = "/"): string {
+  if (
+    typeof path === "string" &&
+    path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.includes("://")
+  ) {
+    return path;
+  }
+  return fallback;
+}
+
 export function timeAgo(date: Date | string) {
   const now = new Date();
   const then = new Date(date);

@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 export function SearchInput({ initialQuery }: { initialQuery: string }) {
   const [value, setValue] = useState(initialQuery);
   const router = useRouter();
+  const latestValue = useRef(value);
+  latestValue.current = value;
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      // Only navigate if value hasn't changed since this timer was set
+      if (latestValue.current !== value) return;
       const trimmed = value.trim();
       if (trimmed) {
         router.push(`/search?q=${encodeURIComponent(trimmed)}`);

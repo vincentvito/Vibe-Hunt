@@ -32,7 +32,7 @@ export async function getGamesByTag(tagSlug: string) {
 
   if (!gameTagRows || gameTagRows.length === 0) return [];
 
-  const gameIds = gameTagRows.map((gt: any) => gt.game_id);
+  const gameIds = gameTagRows.map((gt) => gt.game_id);
 
   const { data: games } = await supabase
     .from("games")
@@ -50,7 +50,10 @@ export async function getGamesByTag(tagSlug: string) {
 
   if (!games) return [];
 
-  return games.map((g: any) => ({
+  type GameWithUser = (typeof games)[number] & {
+    users?: { display_name: string; username: string; avatar_url: string | null } | null;
+  };
+  return (games as GameWithUser[]).map((g) => ({
     id: g.id,
     slug: g.slug,
     title: g.title,
