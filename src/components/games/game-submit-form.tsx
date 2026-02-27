@@ -6,6 +6,7 @@ import { createGame } from "@/server/actions/games";
 import { Sparkles, Loader2 } from "lucide-react";
 import { ImageUpload } from "./image-upload";
 import { MultiImageUpload } from "./multi-image-upload";
+import Link from "next/link";
 
 const AI_TOOLS = [
   "cursor",
@@ -89,6 +90,17 @@ export function GameSubmitForm() {
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          {error.includes("complete your profile") && (
+            <>
+              {" "}
+              <Link
+                href="/complete-profile"
+                className="underline hover:no-underline"
+              >
+                Complete your profile now
+              </Link>
+            </>
+          )}
         </div>
       )}
 

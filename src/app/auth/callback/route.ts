@@ -17,14 +17,18 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const { data: profile } = await supabaseAdmin
+        const { data: profile, error: profileError } = await supabaseAdmin
           .from("users")
           .select("id")
           .eq("auth_id", user.id)
           .limit(1)
           .maybeSingle();
 
-        if (!profile) {
+        if (profileError) {
+          // DB error — don't redirect to complete-profile for existing users.
+          // Let them through; downstream checks will catch missing profiles.
+          console.error("Auth callback profile check error:", profileError.message);
+        } else if (!profile) {
           return NextResponse.redirect(`${origin}/complete-profile`);
         }
       }

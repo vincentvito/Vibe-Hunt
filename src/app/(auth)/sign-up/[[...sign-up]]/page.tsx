@@ -38,6 +38,13 @@ export default function SignUpPage() {
       return;
     }
 
+    // Supabase returns a user with empty identities when the email is already registered
+    if (data.user?.identities && data.user.identities.length === 0) {
+      setError("An account with this email already exists. Please sign in instead.");
+      setLoading(false);
+      return;
+    }
+
     if (data.user) {
       const result = await createUserProfile({
         authId: data.user.id,

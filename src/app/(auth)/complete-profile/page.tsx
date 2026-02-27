@@ -17,6 +17,7 @@ export default function CompleteProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [authUser, setAuthUser] = useState<{
     id: string;
     email: string;
@@ -29,13 +30,14 @@ export default function CompleteProfilePage() {
         return;
       }
       // If profile already exists, skip straight to home
-      const exists = await checkUserProfileExists(user.id);
+      const { exists } = await checkUserProfileExists(user.id);
       if (exists) {
         router.push("/");
         router.refresh();
         return;
       }
       setAuthUser({ id: user.id, email: user.email });
+      setChecking(false);
     });
   }, [router]);
 
@@ -62,10 +64,10 @@ export default function CompleteProfilePage() {
     router.refresh();
   }
 
-  if (!authUser) {
+  if (checking || !authUser) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">Checking your profile…</p>
       </div>
     );
   }

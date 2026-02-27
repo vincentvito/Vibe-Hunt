@@ -15,12 +15,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: user } = await supabase
+    const { data: user, error: userError } = await supabase
       .from("users")
       .select("id")
       .eq("auth_id", authUser.id)
       .limit(1)
       .maybeSingle();
+
+    if (userError) {
+      console.error("Upload route user lookup error:", userError.message);
+      return NextResponse.json(
+        { error: "Unable to verify your account. Please try again." },
+        { status: 500 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json(

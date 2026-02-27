@@ -1,7 +1,6 @@
-import { createServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { Rocket } from "lucide-react";
 import { GameSubmitForm } from "@/components/games/game-submit-form";
+import { requireAuth } from "@/lib/auth-utils";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SubmitGamePage() {
-  const supabaseAuth = await createServerClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) redirect("/sign-in");
+  await requireAuth();
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">

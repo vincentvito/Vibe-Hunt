@@ -45,13 +45,18 @@ export async function createUserProfile(input: {
 
 export async function checkUserProfileExists(
   authId: string
-): Promise<boolean> {
-  const { data } = await supabase
+): Promise<{ exists: boolean; error?: string }> {
+  const { data, error } = await supabase
     .from("users")
     .select("id")
     .eq("auth_id", authId)
     .limit(1)
     .maybeSingle();
 
-  return !!data;
+  if (error) {
+    console.error("checkUserProfileExists query error:", error.message);
+    return { exists: false, error: error.message };
+  }
+
+  return { exists: !!data };
 }

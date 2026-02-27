@@ -40,8 +40,8 @@ export default function SignInPage() {
 
     // Check if DB profile exists — redirect to complete-profile if not
     if (data.user) {
-      const hasProfile = await checkUserProfileExists(data.user.id);
-      if (!hasProfile) {
+      const { exists: hasProfile, error: profileError } = await checkUserProfileExists(data.user.id);
+      if (!hasProfile && !profileError) {
         router.push("/complete-profile");
         router.refresh();
         return;

@@ -16,12 +16,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   } = await supabaseAuth.auth.getUser();
   if (!authUser) return null;
 
-  const { data: user } = await supabase
+  const { data: user, error } = await supabase
     .from("users")
     .select("id, role, username, display_name")
     .eq("auth_id", authUser.id)
     .limit(1)
     .maybeSingle();
+
+  if (error) {
+    console.error("getCurrentUser query error:", error.message);
+    return null;
+  }
 
   return user;
 }
@@ -36,12 +41,17 @@ export async function requireAuth(): Promise<CurrentUser> {
     throw new Error("Unauthorized");
   }
 
-  const { data: user } = await supabase
+  const { data: user, error } = await supabase
     .from("users")
     .select("id, role, username, display_name")
     .eq("auth_id", authUser.id)
     .limit(1)
     .maybeSingle();
+
+  if (error) {
+    console.error("requireAuth query error:", error.message);
+    throw new Error("Unable to verify profile. Please try again.");
+  }
 
   if (!user) {
     redirect("/complete-profile");
