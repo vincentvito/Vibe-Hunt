@@ -23,20 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    supabaseBrowser.auth
-      .getUser()
-      .then(({ data: { user } }) => {
-        setUser(user);
-        setIsLoaded(true);
-      })
-      .catch(() => {
-        setIsLoaded(true);
-      });
-
+    // Use onAuthStateChange instead of getUser() to avoid hitting the
+    // Supabase Auth API on every mount. The INITIAL_SESSION event provides
+    // the current session from local storage without an API call.
     const {
       data: { subscription },
     } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!isLoaded) setIsLoaded(true);
     });
 
     return () => subscription.unsubscribe();

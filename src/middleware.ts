@@ -8,13 +8,18 @@ const PROTECTED_ROUTES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
-
   const isProtected = PROTECTED_ROUTES.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
 
-  if (isProtected && !user) {
+  // Only call Supabase Auth API for protected routes
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  const { supabaseResponse, user } = await updateSession(request);
+
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
     url.searchParams.set("next", request.nextUrl.pathname);
