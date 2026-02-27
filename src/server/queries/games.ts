@@ -124,9 +124,12 @@ export async function getTodaysFeed() {
   }
 }
 
-export async function getGameBySlug(slug: string) {
+export async function getGameBySlug(
+  slug: string,
+  opts?: { allowAnyStatus?: boolean }
+) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("games")
       .select(
         `
@@ -138,9 +141,13 @@ export async function getGameBySlug(slug: string) {
         users!creator_id ( display_name, username, avatar_url, twitter_url, instagram_url )
       `
       )
-      .eq("slug", slug)
-      .limit(1)
-      .maybeSingle();
+      .eq("slug", slug);
+
+    if (!opts?.allowAnyStatus) {
+      query = query.eq("status", "published");
+    }
+
+    const { data, error } = await query.limit(1).maybeSingle();
 
     if (error) {
       console.error("getGameBySlug error:", error.message);

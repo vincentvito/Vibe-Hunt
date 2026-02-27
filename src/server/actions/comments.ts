@@ -32,6 +32,17 @@ export async function createComment(input: {
 
     const validated = createCommentSchema.parse(input);
 
+    // Verify game exists and is published
+    const { data: targetGame } = await supabase
+      .from("games")
+      .select("id, status")
+      .eq("id", validated.gameId)
+      .limit(1)
+      .maybeSingle();
+    if (!targetGame) return actionError("Game not found.");
+    if (targetGame.status !== "published")
+      return actionError("Cannot comment on this game.");
+
     let depth = 0;
     if (validated.parentId) {
       const { data: parent } = await supabase

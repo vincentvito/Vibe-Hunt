@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createGameSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters").max(100),
   tagline: z.string().min(10, "Tagline must be at least 10 characters").max(140),
-  description: z.string().min(20, "Description must be at least 20 characters"),
+  description: z.string().min(20, "Description must be at least 20 characters").max(10000, "Description too long"),
   engine: z.enum([
     "unity_webgl",
     "godot_web",

@@ -25,6 +25,17 @@ export async function toggleUpvote(
     });
     if (!rl.success) return actionError("Too many requests. Please slow down.");
 
+    // Verify game exists and is published
+    const { data: targetGame } = await supabase
+      .from("games")
+      .select("id, status")
+      .eq("id", gameId)
+      .limit(1)
+      .maybeSingle();
+    if (!targetGame) return actionError("Game not found.");
+    if (targetGame.status !== "published")
+      return actionError("Cannot upvote this game.");
+
     // Try to insert first — relies on unique constraint (user_id, game_id)
     const today = new Date().toISOString().split("T")[0];
     const { error: insertError } = await supabase.from("upvotes").insert({
@@ -35,6 +46,12 @@ export async function toggleUpvote(
     });
 
     if (insertError) {
+      // Only treat unique constraint violations as "already upvoted"
+      if (insertError.code !== "23505") {
+        console.error("Upvote insert error:", insertError.message);
+        return actionError("Failed to toggle upvote. Please try again.");
+      }
+
       // Conflict means upvote already exists — remove it
       const { error: deleteError } = await supabase
         .from("upvotes")

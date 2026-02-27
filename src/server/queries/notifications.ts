@@ -16,12 +16,13 @@ export async function getNotifications(
   limit = 20,
   offset = 0
 ): Promise<Notification[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
   const { data, error } = await supabase
     .from("notifications")
     .select("id, type, title, body, link, is_read, metadata, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+    .range(offset, offset + safeLimit - 1);
 
   if (error || !data) return [];
 

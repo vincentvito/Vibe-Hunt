@@ -57,25 +57,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GameDetailPage({ params }: Props) {
   const { slug } = await params;
-  const game = await getGameBySlug(slug);
-  if (!game) notFound();
 
-  const [comments, authResult, screenshotsResult, devlogs] = await Promise.all([
-    getGameComments(game.id),
+  // Resolve auth and game in parallel; use allowAnyStatus so creators can view their own drafts
+  const [game, authInfo] = await Promise.all([
+    getGameBySlug(slug, { allowAnyStatus: true }),
     (async () => {
       const supabaseAuth = await createServerClient();
       const { data: { user: authUser } } = await supabaseAuth.auth.getUser();
-      if (!authUser) return { upvoted: false, currentUserId: null };
+      if (!authUser) return { currentUserId: null };
       const { data: user } = await supabase
         .from("users")
         .select("id")
         .eq("auth_id", authUser.id)
         .limit(1)
         .maybeSingle();
-      if (!user) return { upvoted: false, currentUserId: null };
-      const upvoted = await hasUserUpvoted(user.id, game.id);
-      return { upvoted, currentUserId: user.id };
+      return { currentUserId: user?.id ?? null };
     })(),
+  ]);
+
+  if (!game) notFound();
+
+  // Non-published games are only visible to their creator
+  if (game.status !== "published" && game.creatorId !== authInfo.currentUserId) {
+    notFound();
+  }
+
+  const [comments, upvoted, screenshotsResult, devlogs] = await Promise.all([
+    getGameComments(game.id),
+    authInfo.currentUserId
+      ? hasUserUpvoted(authInfo.currentUserId, game.id)
+      : Promise.resolve(false),
     supabase
       .from("screenshots")
       .select("id, url, alt_text, sort_order")
@@ -84,7 +95,7 @@ export default async function GameDetailPage({ params }: Props) {
     getGameDevlogs(game.id),
   ]);
 
-  const { upvoted, currentUserId } = authResult;
+  const currentUserId = authInfo.currentUserId;
   const screenshots = screenshotsResult.data ?? [];
   const isCreator = currentUserId === game.creatorId;
 

@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_UPLOAD_TYPES = ["thumbnail", "cover", "screenshot", "avatar", "image"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: NextRequest) {
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const type = (formData.get("type") as string) || "image";
+    const rawType = (formData.get("type") as string) || "image";
+    const type = ALLOWED_UPLOAD_TYPES.includes(rawType) ? rawType : "image";
 
     if (!file || file.size === 0) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });

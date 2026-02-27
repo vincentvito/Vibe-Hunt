@@ -2,6 +2,8 @@
 
 import { supabase } from "@/server/db";
 import { nanoid } from "nanoid";
+import { completeProfileSchema } from "@/lib/validators";
+import { sanitizeText } from "@/lib/sanitize";
 
 export async function createUserProfile(input: {
   authId: string;
@@ -9,6 +11,15 @@ export async function createUserProfile(input: {
   username: string;
   displayName: string;
 }): Promise<{ error: string | null; alreadyExists?: boolean }> {
+  // Validate username and displayName server-side
+  const parsed = completeProfileSchema.safeParse({
+    username: input.username,
+    displayName: input.displayName,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
   // Check if profile already exists for this auth_id
   const { data: existing } = await supabase
     .from("users")
@@ -25,8 +36,8 @@ export async function createUserProfile(input: {
     id: nanoid(),
     auth_id: input.authId,
     email: input.email,
-    username: input.username,
-    display_name: input.displayName,
+    username: parsed.data.username,
+    display_name: sanitizeText(parsed.data.displayName),
   });
 
   if (error) {
